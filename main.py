@@ -1,13 +1,13 @@
 from manim import *
 
-STOKE_WIDTH=0.7
-COLOR_DEPTH=0.7
+STOKE_WIDTH=0.3
+COLOR_DEPTH=0.8
 FAST_TIME=1
 class GridProjectionScene(ThreeDScene):
     def construct(self):
         # Configure the scene
         self.set_camera_orientation(
-            phi=65 * DEGREES, 
+            phi=62 * DEGREES, 
             theta=270 * DEGREES,
             zoom=0.2  # Increase this value to move camera further away
         )
@@ -20,10 +20,10 @@ class GridProjectionScene(ThreeDScene):
         projections, top_tl, bottom_tl = self.create_projections(top_grid, bottom_grid)
         
         # Create colored regions
-        blue_region = self.create_colored_region(top_grid, 2, top_tl, BLUE_E, COLOR_DEPTH)
+        red_region = self.create_coloyellow_region(top_grid, 2, top_tl, RED_E, COLOR_DEPTH)
         
         
-        red_region = self.create_colored_region(bottom_grid, 6, bottom_tl, RED_E, COLOR_DEPTH)
+        yellow_region = self.create_coloyellow_region(bottom_grid, 6, bottom_tl, YELLOW_E, COLOR_DEPTH)
         
         # Animation sequence
         top_bottom_grid_animations = []
@@ -42,17 +42,17 @@ class GridProjectionScene(ThreeDScene):
             
         self.play(AnimationGroup(*projection_animations, lag_ratio=0))
         self.play(
-            FadeIn(blue_region),
             FadeIn(red_region),
+            FadeIn(yellow_region),
         )
         
-        color_and_Projecton_group = VGroup(projections, blue_region, red_region)
+        color_and_Projecton_group = VGroup(projections, red_region, yellow_region)
         
         initial_position = color_and_Projecton_group.get_center()
         
         # Number of horizontal and vertical movements
-        horizontal_steps = 3
-        vertical_steps = 4  # You can adjust this number for more/fewer vertical movements
+        horizontal_steps = 5
+        vertical_steps = 6  # You can adjust this number for more/fewer vertical movements
         
         # Define step sizes
         horizontal_step = RIGHT
@@ -60,26 +60,33 @@ class GridProjectionScene(ThreeDScene):
         
         stride = 2
         
-        regions_group = VGroup(blue_region, red_region)
-        
         # Create zigzag pattern
         for v in range(vertical_steps):
-            # Move right
             for h in range(horizontal_steps):
                 # Update projection lines positions before animation
-                new_starts = [blue_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
-                new_ends = [red_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
+                new_starts = [red_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
+                new_ends = [yellow_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
                 
                 # Create the animation for regions
-                region_anim = regions_group.animate.shift(horizontal_step * stride)
+                region_anim = []
+                region_anim.append(red_region.animate.shift(horizontal_step * stride))
+                
+                if h > 0 and h < 4:
+                    region_anim.append(yellow_region.animate.shift(horizontal_step * stride))
+                    
+                
                 
                 # Create animations for projection lines
                 projection_anims = []
                 for i, line in enumerate(projections):
                     # Calculate target positions after shift
-                    target_start = new_starts[i] + horizontal_step * stride
-                    target_end = new_ends[i] + horizontal_step * stride
+                    if h > 0 and h < 4:
+                        target_start = new_starts[i] + horizontal_step * stride
+                        target_end = new_ends[i] + horizontal_step * stride
+                    else:
                     
+                        target_start = new_starts[i] + horizontal_step * stride
+                        target_end = new_ends[i]
                     # Create line animation
                     line_anim = line.animate.put_start_and_end_on(target_start, target_end)
                     projection_anims.append(line_anim)
@@ -95,27 +102,37 @@ class GridProjectionScene(ThreeDScene):
                 break
             
             # Calculate new positions for vertical movement
+            vert_region_anim = []
+            vert_region_anim.append(red_region.animate.shift(vertical_step * stride - horizontal_steps * horizontal_step * stride))
+            
+            
+            
+            if v > 0 and v < 4:
+                vert_region_anim.append(yellow_region.animate.shift(vertical_step * stride - 3 * horizontal_step * stride))
+            else:
+                vert_region_anim.append(yellow_region.animate.shift(- 3 * horizontal_step * stride))
+            
             vertical_offset = vertical_step * (v + 1) * stride
             target_position = initial_position + vertical_offset
             
             # Update projection lines for vertical movement
-            new_starts = [blue_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
-            new_ends = [red_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
+            new_starts = [red_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
+            new_ends = [yellow_region.get_corner(pos) for pos in [UL, UR, DL, DR]]
             
             projection_reset_anims = []
             for i, line in enumerate(projections):
                 if h == horizontal_steps - 1:
                     target_start = new_starts[i] + vertical_step * stride - horizontal_steps *horizontal_step * stride
-                    target_end = new_ends[i] + vertical_step * stride - horizontal_steps * horizontal_step * stride
+                    target_end = new_ends[i] - 3 * horizontal_step * stride
                 else:
                     target_start = new_starts[i] + vertical_offset
-                    target_end = new_ends[i] + vertical_offset
+                    target_end = new_ends[i]
                 line_anim = line.animate.put_start_and_end_on(target_start, target_end)
                 projection_reset_anims.append(line_anim)
             
             # Play reset animation with all elements
             self.play(
-                regions_group.animate.move_to(target_position),
+                vert_region_anim,
                 *projection_reset_anims,
                 run_time=FAST_TIME
             )
@@ -132,17 +149,31 @@ class GridProjectionScene(ThreeDScene):
         
         # Create horizontal and vertical lines
         for i in range(rows + 1):
-            grid.add(Line(
+            if i % 2 == 0:
+                grid.add(Line(
                 start=np.array([-cols/2, -rows/2 + i, z_pos]),
                 end=np.array([cols/2, -rows/2 + i, z_pos]),
-                stroke_width=STOKE_WIDTH
+                stroke_width=1
             ))
+            else:       
+                grid.add(Line(
+                    start=np.array([-cols/2, -rows/2 + i, z_pos]),
+                    end=np.array([cols/2, -rows/2 + i, z_pos]),
+                    stroke_width=STOKE_WIDTH
+                ))
         for j in range(cols + 1):
-            grid.add(Line(
+            if j % 2 == 0:
+                grid.add(Line(
                 start=np.array([-cols/2 + j, -rows/2, z_pos]),
                 end=np.array([-cols/2 + j, rows/2, z_pos]),
-                stroke_width=STOKE_WIDTH
+                stroke_width=1
             ))
+            else:
+                grid.add(Line(
+                    start=np.array([-cols/2 + j, -rows/2, z_pos]),
+                    end=np.array([-cols/2 + j, rows/2, z_pos]),
+                    stroke_width=STOKE_WIDTH
+                ))
                 
         return grid
 
@@ -151,15 +182,15 @@ class GridProjectionScene(ThreeDScene):
         
         # Create connecting lines at the corners
         
-        top_tl = (-4, 4)
+        top_tl = (-6, 6)
         top_tr = top_tl + np.array([2, 0])
         top_bl = top_tl + np.array([0, -2])
         top_br = top_tl + np.array([2, -2])
         
-        bottom_tl = top_tl + np.array([-2, 2])
-        bottom_tr = top_tr + np.array([2, 2])
-        bottom_bl = top_bl + np.array([-2, -2])
-        bottom_br = top_br + np.array([2, -2])
+        bottom_tl = (-6, 6)
+        bottom_tr = bottom_tl + np.array([6, 0])
+        bottom_bl = bottom_tl + np.array([-0, -6])
+        bottom_br = bottom_tl + np.array([6, -6])
                 
         corners = [
             (top_tl[0], top_tl[1], bottom_tl[0], bottom_tl[1]),
@@ -173,12 +204,12 @@ class GridProjectionScene(ThreeDScene):
                 start=np.array([x, y, 5]),
                 end=np.array([z, k, 0]),
                 stroke_opacity=0.5,
-                stroke_width=STOKE_WIDTH
+                stroke_width=1.0
             ))
             
         return projections, top_tl, bottom_tl
 
-    def create_colored_region(self, grid, side_length, tl_pos, color, opacity):
+    def create_coloyellow_region(self, grid, side_length, tl_pos, color, opacity):
         
         i, j = tl_pos
         
