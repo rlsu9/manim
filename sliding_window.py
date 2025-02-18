@@ -2,11 +2,12 @@ from manim import *
 
 STOKE_WIDTH=0.3
 COLOR_DEPTH=0.8
+SMALL_SIDE_LENGTH = 1
+LARGE_SIDE_LENGTH = 5
+CANVAS_SIZE = 10
 FAST_TIME=1
-NUMBER_DISPLAY_TIME=1
 ROTATION_TIME=1
-CANVAS_SIZE=10
-TILE_SIZE=2
+NUMBER_DISPLAY_TIME=1
 class GridProjectionScene(ThreeDScene):
     def construct(self):
         # Configure the scene
@@ -18,37 +19,28 @@ class GridProjectionScene(ThreeDScene):
         
         # Create the base grids
         top_grid = self.create_numbered_grid(rows=CANVAS_SIZE, cols=CANVAS_SIZE, z_pos=5)
-        top_numbers = self.create_grid_numbers(size=CANVAS_SIZE, z_pos=5)
         bottom_grid = self.create_numbered_grid(rows=CANVAS_SIZE, cols=CANVAS_SIZE, z_pos=0)
-        bottom_numbers = self.create_grid_numbers(size=CANVAS_SIZE, z_pos=0)
         
         # Create connecting lines for the projection
         projections, top_tl, bottom_tl = self.create_projections(top_grid, bottom_grid)
         
         # Create colored regions
-        red_region = self.create_coloyellow_region(top_grid, 2, top_tl, RED_E, COLOR_DEPTH)
+        red_region = self.create_coloyellow_region(top_grid, SMALL_SIDE_LENGTH, top_tl, RED_E, COLOR_DEPTH)
         
         
-        yellow_region = self.create_coloyellow_region(bottom_grid, 6, bottom_tl, YELLOW_E, COLOR_DEPTH)
+        yellow_region = self.create_coloyellow_region(bottom_grid, LARGE_SIDE_LENGTH, bottom_tl, YELLOW_E, COLOR_DEPTH)
         
         # Animation sequence
+        top_numbers = self.create_grid_numbers(CANVAS_SIZE, z_pos=5)
         top_grid_animations = []
         
         for line in top_grid:
             top_grid_animations.append(Create(line))
         for number in top_numbers:
-            top_grid_animations.append(Create(number))    
-            
-        bottom_grid_animations = []
-    
-        for line in bottom_grid:
-            bottom_grid_animations.append(Create(line))
-        for number in bottom_numbers:
-            bottom_grid_animations.append(Create(number))
-        for num in top_numbers:
-            bottom_grid_animations.append(FadeOut(num))
+            top_grid_animations.append(Create(number))
         
         self.play(AnimationGroup(*top_grid_animations, lag_ratio=0), run_time=FAST_TIME)
+        
         
         self.wait(NUMBER_DISPLAY_TIME)
         
@@ -60,6 +52,8 @@ class GridProjectionScene(ThreeDScene):
         
         self.play(FadeOut(highlight_grid))
         
+        
+        # rotate the camera phi for 62 degrees
         self.move_camera(
             phi=62 * DEGREES,  # Target angle
             run_time=ROTATION_TIME,
@@ -67,7 +61,18 @@ class GridProjectionScene(ThreeDScene):
             zoom=0.2
         )
         
+        bottom_numbers = self.create_grid_numbers(CANVAS_SIZE, z_pos=0)
+        bottom_grid_animations = []
+        for line in bottom_grid:
+            bottom_grid_animations.append(Create(line))
+        for number in bottom_numbers:
+            bottom_grid_animations.append(Create(number))
+        for num in top_numbers:
+            bottom_grid_animations.append(FadeOut(num))
+        
         self.play(AnimationGroup(*bottom_grid_animations, lag_ratio=0), run_time=FAST_TIME)
+        
+        
         
         projection_animations = []
         for line in projections:
@@ -84,14 +89,14 @@ class GridProjectionScene(ThreeDScene):
         initial_position = color_and_Projecton_group.get_center()
         
         # Number of horizontal and vertical movements
-        horizontal_steps = int(CANVAS_SIZE / TILE_SIZE) - 1
-        vertical_steps = horizontal_steps + 1  # You can adjust this number for more/fewer vertical movements
+        horizontal_steps = 9
+        vertical_steps = 10  # You can adjust this number for more/fewer vertical movements
         
         # Define step sizes
         horizontal_step = RIGHT
         vertical_step = DOWN
         
-        stride = TILE_SIZE
+        stride = 1
         
         # Create zigzag pattern
         for v in range(vertical_steps):
@@ -104,7 +109,7 @@ class GridProjectionScene(ThreeDScene):
                 region_anim = []
                 region_anim.append(red_region.animate.shift(horizontal_step * stride))
                 
-                if h > 0 and h < 3:
+                if h > 1 and h < 7:
                     region_anim.append(yellow_region.animate.shift(horizontal_step * stride))
                     
                 
@@ -113,7 +118,7 @@ class GridProjectionScene(ThreeDScene):
                 projection_anims = []
                 for i, line in enumerate(projections):
                     # Calculate target positions after shift
-                    if h > 0 and h < 3:
+                    if h > 1 and h < 7:
                         target_start = new_starts[i] + horizontal_step * stride
                         target_end = new_ends[i] + horizontal_step * stride
                     else:
@@ -140,10 +145,10 @@ class GridProjectionScene(ThreeDScene):
             
             
             
-            if v > 0 and v < 3:
-                vert_region_anim.append(yellow_region.animate.shift(vertical_step * stride - 2 * horizontal_step * stride))
+            if v > 1 and v < 7:
+                vert_region_anim.append(yellow_region.animate.shift(vertical_step * stride - 5 * horizontal_step * stride))
             else:
-                vert_region_anim.append(yellow_region.animate.shift(- 2 * horizontal_step * stride))
+                vert_region_anim.append(yellow_region.animate.shift(- 5 * horizontal_step * stride))
             
             vertical_offset = vertical_step * (v + 1) * stride
             target_position = initial_position + vertical_offset
@@ -156,10 +161,10 @@ class GridProjectionScene(ThreeDScene):
             for i, line in enumerate(projections):
                 if h == horizontal_steps - 1:
                     target_start = new_starts[i] + vertical_step * stride - horizontal_steps *horizontal_step * stride
-                    if v > 0 and v < 3: 
-                        target_end = new_ends[i] - 2 * horizontal_step * stride + vertical_step * stride
+                    if v > 1 and v < 7: 
+                        target_end = new_ends[i] - 5 * horizontal_step * stride + vertical_step * stride
                     else:
-                        target_end = new_ends[i] - 2 * horizontal_step * stride
+                        target_end = new_ends[i] - 5 * horizontal_step * stride
                 else:
                     target_start = new_starts[i] + vertical_offset
                     target_end = new_ends[i]
@@ -189,7 +194,7 @@ class GridProjectionScene(ThreeDScene):
                 grid.add(Line(
                 start=np.array([-cols/2, -rows/2 + i, z_pos]),
                 end=np.array([cols/2, -rows/2 + i, z_pos]),
-                stroke_width=1
+                stroke_width=STOKE_WIDTH
             ))
             else:       
                 grid.add(Line(
@@ -202,7 +207,7 @@ class GridProjectionScene(ThreeDScene):
                 grid.add(Line(
                 start=np.array([-cols/2 + j, -rows/2, z_pos]),
                 end=np.array([-cols/2 + j, rows/2, z_pos]),
-                stroke_width=1
+                stroke_width=STOKE_WIDTH
             ))
             else:
                 grid.add(Line(
@@ -216,37 +221,16 @@ class GridProjectionScene(ThreeDScene):
     def create_grid_numbers(self, size, z_pos):
         numbers = VGroup()
         half_size = size // 2
-        tile_size = 2  # Size of each tile (2x2)
         
-        # Process each tile
-        for tile_row in range(-half_size, half_size, tile_size):
-            for tile_col in range(-half_size, half_size, tile_size):
-                # Calculate base number for this tile
-                base_tile_row = (tile_row + half_size) // tile_size
-                base_tile_col = (tile_col + half_size) // tile_size
-                tile_base = (base_tile_row * (size // tile_size) + base_tile_col) * (tile_size * tile_size)
-                
-                # Fill numbers within the tile in zigzag pattern
-                tile_positions = [
-                    (0, 0),  # Top-left
-                    (1, 0),  # Top-right
-                    (0, 1),  # Bottom-left
-                    (1, 1),  # Bottom-right
-                ]
-                
-                for idx, (dx, dy) in enumerate(tile_positions):
-                    number = Text(
-                        str(tile_base + idx + 1),
-                        font_size=20,
-                        color=WHITE
-                    )
-                    
-                    # Calculate final position
-                    x = tile_col + dx + 0.5
-                    y = -(tile_row + dy + 0.5)
-                    
-                    number.move_to(np.array([x, y, z_pos]))
-                    numbers.add(number)
+        for i in range(-half_size, half_size):
+            for j in range(-half_size, half_size):
+                number = Text(
+                    str((i + half_size) * size + (j + half_size) + 1),
+                    font_size=20,
+                    color=WHITE
+                )
+                number.move_to(np.array([j + 0.5, -i - 0.5, z_pos]))
+                numbers.add(number)
         
         return numbers
     
@@ -254,17 +238,17 @@ class GridProjectionScene(ThreeDScene):
         projections = VGroup()
         
         # Create connecting lines at the corners
-        size = int(CANVAS_SIZE/TILE_SIZE)
+        half_side = int(CANVAS_SIZE / 2)
         
-        top_tl = (-size, size)
-        top_tr = top_tl + np.array([2, 0])
-        top_bl = top_tl + np.array([0, -2])
-        top_br = top_tl + np.array([2, -2])
+        top_tl = (-half_side, half_side)
+        top_tr = top_tl + np.array([SMALL_SIDE_LENGTH, 0])
+        top_bl = top_tl + np.array([0, -SMALL_SIDE_LENGTH])
+        top_br = top_tl + np.array([SMALL_SIDE_LENGTH, -SMALL_SIDE_LENGTH])
         
-        bottom_tl = (-size, size)
-        bottom_tr = bottom_tl + np.array([6, 0])
-        bottom_bl = bottom_tl + np.array([-0, -6])
-        bottom_br = bottom_tl + np.array([6, -6])
+        bottom_tl = (-half_side, half_side)
+        bottom_tr = bottom_tl + np.array([LARGE_SIDE_LENGTH, 0])
+        bottom_bl = bottom_tl + np.array([-0, -LARGE_SIDE_LENGTH])
+        bottom_br = bottom_tl + np.array([LARGE_SIDE_LENGTH, -LARGE_SIDE_LENGTH])
                 
         corners = [
             (top_tl[0], top_tl[1], bottom_tl[0], bottom_tl[1]),
